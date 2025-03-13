@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup Page</title>
+    <link rel="stylesheet" href="signuppage.css">
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <h1>Welcome to the Placement Portal</h1>
+            <ul>
+                <li>
+                    <div class="icon">&#10004;</div>
+                    <span class="description">Simplify your placement journey with ease.</span>
+                </li>
+                <li>
+                    <div class="icon">&#10004;</div>
+                    <span class="description">Enhance interaction between students and coordinators.</span>
+                </li>
+                <li>
+                    <div class="icon">&#10004;</div>
+                    <span class="description">Apply for jobs and internships effortlessly.</span>
+                </li>
+            </ul>
+        </div>
+        <div class="right">
+            <div class="form-container">
+                <h2>Create an Account</h2>
+                <form id="signup-form">
+                    <div class="form-group">
+                        <label for="role">Sign up as:</label>
+                        <select id="role" required>
+                            <option value="" disabled selected>Select your role</option>
+                            <option value="student">Student</option>
+                            <option value="pc">Placement Coordinator</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="user-name">User name</label>
+                        <input type="text" id="user-name" placeholder="Enter your user name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu" 
+                            title="Please enter a valid .edu email address" 
+                            placeholder="Enter your college email" 
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="button">Sign Up</button>
+                </form>
+                <div class="footer">
+                    Already have an account? <a href="login_page.html">Log in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js"></script>
+
+    <script>
+        document.getElementById("signup-form").addEventListener("submit", async function(event) {
+            event.preventDefault(); // Prevent form from refreshing
+
+            const role = document.getElementById("role").value;
+            const username = document.getElementById("user-name").value;
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            if (!role) {
+                alert("Please select a role to proceed.");
+                return;
+            }
+
+            console.log("Starting signup process...");
+
+            // Step 1: Signup user with Supabase Auth
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password
+            });
+
+            if (error) {
+                console.error("Signup error:", error.message);
+                alert("Signup failed: " + error.message);
+                return;
+            }
+
+            console.log("User created successfully:", data);
+
+            const userId = data.user?.id; // Get new user's ID
+
+            if (!userId) {
+                console.error("No user ID returned from Supabase.");
+                return;
+            }
+
+            console.log("User ID:", userId);
+
+            // Step 2: Insert user details into "users" table
+            const { error: dbError } = await supabase.from("users").insert([
+                { id: userId, email: email, role: role, username: username }
+            ]);
+
+            if (dbError) {
+                console.error("Database insert error:", dbError.message);
+                alert("Error saving user details: " + dbError.message);
+                return;
+            }
+
+            console.log("User details inserted successfully!");
+
+            // Step 3: Redirect to the correct page
+            if (role === "student") {
+                window.location.href = "student_onboarding.html";
+            } else if (role === "pc") {
+                window.location.href = "placementcoordinator_onboarding.html";
+            }
+        });
+    </script>
+</body>
+</html>
