@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Onboarding</title>
+    <link rel="stylesheet" href="pc_onboarding.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Placement Coordinator Onboarding</h2>
+        <form id="onboarding-form">
+            
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="Enter your username" required>
+            <button type="button" id="check-username">Check Username</button>
+            <p id="username-status"></p>
+
+            <label for="first-name">First Name</label>
+            <input type="text" id="first-name" placeholder="Enter your first name" required>
+        
+            <label for="last-name">Last Name</label>
+            <input type="text" id="last-name" placeholder="Enter your last name" required>
+            
+            <label for="dob">Date of Birth</label>
+            <input type="date" id="dob" name="dob" required>
+                
+            <label for="contact">Contact Number</label>
+            <div style="display: flex; align-items: center;">
+                <select id="countryCode" required style="width: 100px; margin-right: 15px;">
+                    <option value="" disabled selected>PIN</option>
+                    <option value="+1">+1 (USA)</option>
+                    <option value="+44">+44 (UK)</option>
+                    <option value="+91">+91 (India)</option>
+                    <option value="+61">+61 (Australia)</option>
+                </select>
+                <input type="tel" id="phoneNumber" placeholder="Your Contact Number" required pattern="\d{10}" maxlength="10">
+            </div>
+                    
+            <label for="gender">Gender</label>
+            <select id="gender" name="gender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <label for="profilePicture">Profile Picture (Optional)</label>
+            <input type="file" id="profilePicture" name="profilePicture">
+
+            <label for="resume">Upload Resume (Optional)</label>
+            <input type="file" id="resume" name="resume">
+
+            <label for="jobTitle">Job Title/Role</label>
+            <input type="text" id="jobTitle" name="jobTitle" required>
+
+            <label for="institutionName">Institution Name</label>
+            <input type="text" id="institutionName" name="institutionName" required>
+
+            <label for="department">Department</label>
+            <input type="text" id="department" name="department" required>
+
+            <label for="yearsOfExperience">Years of Experience</label>
+            <input type="number" id="yearsOfExperience" name="yearsOfExperience" min="0" step="1" required>
+
+            <label for="educationLevel">Education Level</label>
+            <select id="educationLevel" name="educationLevel" required>
+                <option value="Bachelor's">Bachelor's</option>
+                <option value="Master's">Master's</option>
+                <option value="PhD">PhD</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <label for="expertise">Area of Expertise</label>
+            <input type="text" id="expertise" name="expertise" required>
+
+            <label for="institutionType">Institution Type</label>
+            <select id="institutionType" name="institutionType" required>
+                <option value="University">University</option>
+                <option value="College">College</option>
+                <option value="Vocational Institute">Vocational Institute</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <label for="institutionLocation">Institution Location</label>
+            <input type="text" id="institutionLocation" name="institutionLocation" required>
+
+            <label for="placementCellID">Placement Cell ID/Code</label>
+            <input type="text" id="placementCellID" name="placementCellID" required>
+
+            <label for="officeAddress">Office Address</label>
+            <input type="text" id="officeAddress" name="officeAddress" required>
+
+            <button type="submit" disabled id="submit-btn">Sign Up</button>
+        </form>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://bawhzyetjzkeypszpeqr.supabase.co'; // Replace with your Supabase URL
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhd2h6eWV0anprZXlwc3pwZXFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE1OTI4MzgsImV4cCI6MjA0NzE2ODgzOH0.KAzCjKkqixRLz522RA7_SNvWMQ9sJdga2BoQJPPw2Hg'; // Replace with your actual Supabase key
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey); 
+
+        document.getElementById("check-username").addEventListener("click", async function () {
+            const username = document.getElementById("username").value.trim();
+            if (!username) return alert("Enter a username.");
+
+            const { data, error } = await supabase.from("users").select("id, role").eq("username", username).single();
+
+            if (error || !data) {
+                document.getElementById("username-status").innerText = "Username not found.";
+                document.getElementById("submit-btn").disabled = true;
+            } else if (data.role !== "pc") {
+                document.getElementById("username-status").innerText = "User is not a Placement Coordinator.";
+                document.getElementById("submit-btn").disabled = true;
+            } else {
+                document.getElementById("username-status").innerText = "Username verified!";
+                document.getElementById("submit-btn").disabled = false;
+                sessionStorage.setItem("pcUserId", data.id);
+            }
+        });
+
+        document.getElementById("onboarding-form").addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const userId = sessionStorage.getItem("pcUserId");
+            if (!userId) return alert("Please verify your username first.");
+
+            const formData = new FormData(event.target);
+            const profilePicFile = formData.get("profilePicture");
+            const resumeFile = formData.get("resume");
+
+            let profilePictureUrl = null;
+            let resumeUrl = null;
+
+            if (profilePicFile.size > 0) {
+                const { data, error } = await supabase.storage.from("profile_pictures").upload(`pc_${userId}/${profilePicFile.name}`, profilePicFile);
+                if (!error) profilePictureUrl = data.path;
+            }
+
+            if (resumeFile.size > 0) {
+                const { data, error } = await supabase.storage.from("resumes").upload(`pc_${userId}/${resumeFile.name}`, resumeFile);
+                if (!error) resumeUrl = data.path;
+            }
+
+            const { error: dbError } = await supabase.from("placement_coordinators").insert([
+                {
+                    id: userId,
+                    first_name: formData.get("first-name"),
+                    last_name: formData.get("last-name"),
+                    dob: formData.get("dob"),
+                    contact_number: formData.get("phoneNumber"),
+                    country_code: formData.get("countryCode"),
+                    gender: formData.get("gender"),
+                    profile_picture: profilePictureUrl,
+                    job_title: formData.get("jobTitle"),
+                    institution_name: formData.get("institutionName"),
+                    department: formData.get("department"),
+                    years_of_experience: parseInt(formData.get("yearsOfExperience")),
+                    education_level: formData.get("educationLevel"),
+                    expertise: formData.get("expertise"),
+                    institution_type: formData.get("institutionType"),
+                    institution_location: formData.get("institutionLocation"),
+                    placement_cell_id: formData.get("placementCellID"),
+                    office_address: formData.get("officeAddress"),
+                    resume: resumeUrl
+                }
+            ]);
+
+            if (dbError) alert("Error saving data: " + dbError.message);
+            else window.location.href = "placement-coordinator-front.html";
+        });
+    </script>
+
+</body>
+</html>
