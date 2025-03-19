@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Placement Hire</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js"></script>
     <style>
         /* Global Styles */
         * {
@@ -146,11 +146,6 @@
             color: #ffc107;
             font-weight: bold;
         }
-
-        .error-message {
-            color: red;
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
@@ -174,62 +169,79 @@
                 <a href="#" class="forgot-password">Forgot Password?</a>
             </div>
 
-            <!-- Error Message -->
-            <p id="error-message" class="error-message"></p>
-
             <!-- Login Button -->
             <button type="submit" class="login-button">Login</button>
         </form>
 
         <!-- Sign Up Link -->
         <div class="signup-link">
-            Don't have an account? <a href="student_onboarding.html">Sign Up</a>
+            Don't have an account? <a href="signup.html">Sign Up</a>
         </div>
     </div>
 
     <script>
-        // Keep the existing Supabase initialization
-        const supabaseUrl = 'https://bawhzyetjzkeypszpeqr.supabase.co'; // Replace with your Supabase URL
-            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhd2h6eWV0anprZXlwc3pwZXFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE1OTI4MzgsImV4cCI6MjA0NzE2ODgzOH0.KAzCjKkqixRLz522RA7_SNvWMQ9sJdga2BoQJPPw2Hg'; // Replace with your actual Supabase key
-            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey); 
+        // ✅ Supabase Initialization (DO NOT CHANGE)
+        const supabaseUrl = "https://bawhzyetjzkeypszpeqr.supabase.co"; // Replace with your Supabase URL
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhd2h6eWV0anprZXlwc3pwZXFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE1OTI4MzgsImV4cCI6MjA0NzE2ODgzOH0.KAzCjKkqixRLz522RA7_SNvWMQ9sJdga2BoQJPPw2Hg"; // Replace with your Supabase anon key
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // Login Functionality
-        document.getElementById("login-form").addEventListener("submit", async function (event) {
-            event.preventDefault();
-            
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
-            const errorMessage = document.getElementById("error-message");
-
-            errorMessage.textContent = "";
-
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
-
-            if (error) {
-                console.error("Login Error:", error.message);
-                errorMessage.textContent = "Invalid email or password.";
-            } else {
-                console.log("Login Successful:", data);
-                window.location.href = "mainpage.html"; // Redirect after login
-            }
-        });
-
-        // Toggle Password Visibility
+        // ✅ Toggle Password Visibility
         function togglePasswordVisibility() {
             const passwordField = document.getElementById('password');
             const toggleIcon = document.querySelector('.password-toggle');
 
             if (passwordField.type === 'password') {
                 passwordField.type = 'text';
-                toggleIcon.textContent = '👁️';
+                toggleIcon.textContent = '🙈';
             } else {
                 passwordField.type = 'password';
                 toggleIcon.textContent = '👁️';
             }
         }
+
+        // ✅ Handle Form Submission
+        document.getElementById('login-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            // Get form values
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Attempt to log in the user
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) {
+                alert("Login failed: " + error.message);
+                return;
+            }
+
+            // ✅ User authenticated successfully
+            const userId = data.user.id;
+
+            // Get user role from the 'users' table
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('role')
+                .eq('id', userId)
+                .single();
+
+            if (userError || !userData) {
+                alert("Error fetching user role.");
+                return;
+            }
+
+            // ✅ Redirect based on role
+            if (userData.role === 'student') {
+                window.location.href = 'studentdashboard.html';
+            } else if (userData.role === 'placement_coordinator' || userData.role === 'pc') {
+                window.location.href = 'placement-coordinator-front.html';
+            } else {
+                alert("Invalid role detected. Contact administrator.");
+            }
+        });
     </script>
 </body>
 </html>
